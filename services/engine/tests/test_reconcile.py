@@ -45,3 +45,23 @@ def test_backcomputes_opening_when_no_anchor():
     _txns, summary, _confidence = reconcile(rows)
     assert summary.opening_balance == 1000.00
     assert summary.flagged_rows == 0
+
+
+def test_backcomputed_first_row_not_counted_in_confidence():
+    # With no opening anchor, row 0 ties out by construction. Only row 1 is a
+    # real check, so a single clean second row → full confidence (not "2/2"
+    # where one was free).
+    rows = [
+        _txn("2026-04-02", "A", out=4550, bal=95450),
+        _txn("2026-04-05", "B", inn=200000, bal=295450),
+    ]
+    _txns, _summary, confidence = reconcile(rows)
+    assert confidence == 1.0
+
+    # And a broken second row against a back-computed opening is 0/1, not 1/2.
+    broken = [
+        _txn("2026-04-02", "A", out=4550, bal=95450),
+        _txn("2026-04-05", "B", inn=200000, bal=999999),  # wrong
+    ]
+    _t, _s, conf2 = reconcile(broken)
+    assert conf2 == 0.0

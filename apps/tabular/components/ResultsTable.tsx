@@ -4,6 +4,7 @@ import * as React from "react";
 import { Badge, Button, ConfidenceBadge } from "@tabular/ui";
 import { track } from "@tabular/analytics";
 import type { ExtractionResult, Preset, Transaction } from "@/lib/types";
+import { reconcile } from "@/lib/reconcile";
 
 function money(n: number | null): string {
   return n == null ? "" : n.toFixed(2);
@@ -16,7 +17,23 @@ function parseMoney(v: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-type EditableField = "date" | "description" | "money_in" | "money_out" | "balance";
+type EditableField =
+  | "date"
+  | "description"
+  | "category"
+  | "money_in"
+  | "money_out"
+  | "balance";
+
+// Order of the editable columns, used for keyboard navigation (Enter → next row).
+const COLS: EditableField[] = [
+  "date",
+  "description",
+  "category",
+  "money_in",
+  "money_out",
+  "balance",
+];
 
 export function ResultsTable({ result }: { result: ExtractionResult }) {
   const [rows, setRows] = React.useState<Transaction[]>(result.rows);
@@ -41,19 +58,18 @@ export function ResultsTable({ result }: { result: ExtractionResult }) {
       const row = { ...next[i] } as Transaction;
       if (field === "description" || field === "date") {
         row[field] = value;
+      } else if (field === "category") {
+        row.category = value.trim() === "" ? null : value;
       } else {
         row[field] = parseMoney(value);
       }
-      // A manual edit clears the flag — the user has reviewed this row.
-      row.flag_reason = null;
-      row.reconciled = true;
       next[i] = row;
       track({ name: "row_edited", props: {} });
       return next;
     });
   }
 
-  async function doExport(format: "csv" | "xlsx") {
+  async function doExport(format: "csv" | "xlsx" | "ofx") {
     setBusy(true);
     track({ name: "export_clicked", props: { format, preset } });
     try {
@@ -70,7 +86,8 @@ export function ResultsTable({ result }: { result: ExtractionResult }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `statement-${preset}.${format}`;
+      // OFX carries its own transaction layout, independent of the CSV preset.
+      a.download = format === "ofx" ? "statement.ofx" : `statement-${preset}.${format}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -80,14 +97,22 @@ export function ResultsTable({ result }: { result: ExtractionResult }) {
     }
   }
 
-  const flaggedCount = rows.filter((r) => !r.reconciled).length;
-  const s = result.summary;
+  // Re-run reconciliation on every edit so the trust signals stay honest: the
+  // opening balance from extraction anchors the chain, everything below is
+  // recomputed from the (possibly edited) rows.
+  const recon = React.useMemo(
+    () => reconcile(rows, result.summary.opening_balance),
+    [rows, result.summary.opening_balance],
+  );
+  const verified = recon.rows;
+  const flaggedCount = recon.summary.flagged_rows;
+  const s = recon.summary;
 
   return (
     <div className="space-y-5">
       {/* Summary / trust bar */}
       <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-[var(--tab-border)] bg-white p-4">
-        <ConfidenceBadge score={result.overall_confidence} />
+        <ConfidenceBadge score={recon.confidence} />
         <Badge tone="brand">{result.bank_profile}</Badge>
         <span className="text-sm text-gray-600">
           {s.movement_rows} transactions · {flaggedCount} to review
@@ -128,6 +153,14 @@ export function ResultsTable({ result }: { result: ExtractionResult }) {
         <Button variant="secondary" onClick={() => doExport("xlsx")} disabled={busy}>
           Export Excel
         </Button>
+        <Button
+          variant="secondary"
+          onClick={() => doExport("ofx")}
+          disabled={busy}
+          title="OFX/QBO bank-feed file for QuickBooks, Xero and most accounting tools"
+        >
+          Export OFX / QBO
+        </Button>
       </div>
 
       {/* Editable table */}
@@ -135,62 +168,91 @@ export function ResultsTable({ result }: { result: ExtractionResult }) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-[var(--tab-border)] bg-[var(--tab-surface-muted)] text-left">
-              <th className="px-3 py-2 font-medium">Date</th>
-              <th className="px-3 py-2 font-medium">Description</th>
-              <th className="px-3 py-2 text-right font-medium">Money in</th>
-              <th className="px-3 py-2 text-right font-medium">Money out</th>
-              <th className="px-3 py-2 text-right font-medium">Balance</th>
-              <th className="px-3 py-2 font-medium">Status</th>
+              <th scope="col" className="px-3 py-2 font-medium">Date</th>
+              <th scope="col" className="px-3 py-2 font-medium">Description</th>
+              <th scope="col" className="px-3 py-2 font-medium">Category</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Money in</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Money out</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Balance</th>
+              <th scope="col" className="px-3 py-2 font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => (
+            {rows.map((r, i) => {
+              const v = verified[i] ?? r;
+              return (
               <tr
                 key={i}
                 className={`border-b border-[var(--tab-border)] last:border-0 ${
-                  !r.reconciled ? "bg-amber-50" : ""
+                  !v.reconciled ? "bg-amber-50" : ""
                 }`}
               >
-                <Cell value={r.date} onChange={(v) => updateCell(i, "date", v)} />
+                <Cell row={i} col="date" value={r.date} onChange={updateCell} />
                 <Cell
+                  row={i}
+                  col="description"
                   value={r.description}
-                  onChange={(v) => updateCell(i, "description", v)}
+                  onChange={updateCell}
                   wide
                 />
                 <Cell
+                  row={i}
+                  col="category"
+                  value={r.category ?? ""}
+                  onChange={updateCell}
+                  placeholder="Uncategorised"
+                />
+                <Cell
+                  row={i}
+                  col="money_in"
                   value={money(r.money_in)}
-                  onChange={(v) => updateCell(i, "money_in", v)}
+                  onChange={updateCell}
                   align="right"
                 />
                 <Cell
+                  row={i}
+                  col="money_out"
                   value={money(r.money_out)}
-                  onChange={(v) => updateCell(i, "money_out", v)}
+                  onChange={updateCell}
                   align="right"
                 />
                 <Cell
+                  row={i}
+                  col="balance"
                   value={money(r.balance)}
-                  onChange={(v) => updateCell(i, "balance", v)}
+                  onChange={updateCell}
                   align="right"
                 />
                 <td className="px-3 py-1.5">
-                  {r.reconciled ? (
+                  {v.reconciled ? (
                     <Badge tone="reconciled">OK</Badge>
                   ) : (
-                    <span title={r.flag_reason ?? ""}>
-                      <Badge tone="flagged">Review</Badge>
+                    <Badge tone="flagged">Review</Badge>
+                  )}
+                  <span className="sr-only">
+                    {v.reconciled ? "Reconciled" : v.flag_reason ?? "Needs review"}
+                  </span>
+                  {!v.reconciled && v.flag_reason && (
+                    <span
+                      className="ml-2 hidden text-xs text-[var(--tab-flagged)] sm:inline"
+                      aria-hidden="true"
+                    >
+                      {v.flag_reason}
                     </span>
                   )}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {flaggedCount > 0 && (
         <p className="text-sm text-gray-600">
-          Highlighted rows didn&apos;t reconcile against the running balance. Edit
-          any cell to correct it — the flag clears once you&apos;ve reviewed it.
+          Highlighted rows don&apos;t reconcile against the running balance. Correct
+          the figures and the flag clears automatically once the row balances —
+          we re-check the maths on every edit.
         </p>
       )}
     </div>
@@ -198,22 +260,43 @@ export function ResultsTable({ result }: { result: ExtractionResult }) {
 }
 
 function Cell({
+  row,
+  col,
   value,
   onChange,
   align = "left",
   wide = false,
+  placeholder,
 }: {
+  row: number;
+  col: EditableField;
   value: string;
-  onChange: (v: string) => void;
+  onChange: (row: number, col: EditableField, value: string) => void;
   align?: "left" | "right";
   wide?: boolean;
+  placeholder?: string;
 }) {
+  // Spreadsheet-style keyboard flow: Enter moves to the same column one row down.
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const next = document.querySelector<HTMLInputElement>(
+        `[data-cell="${row + 1}-${col}"]`,
+      );
+      next?.focus();
+      next?.select();
+    }
+  }
   return (
     <td className={`px-2 py-1 ${wide ? "min-w-[240px]" : ""}`}>
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full rounded-[6px] border border-transparent bg-transparent px-1.5 py-1 hover:border-[var(--tab-border)] focus:border-[var(--tab-brand)] focus:bg-white focus:outline-none ${
+        placeholder={placeholder}
+        data-cell={`${row}-${col}`}
+        aria-label={`${col.replace("_", " ")}, row ${row + 1}`}
+        onChange={(e) => onChange(row, col, e.target.value)}
+        onKeyDown={onKeyDown}
+        className={`w-full rounded-[6px] border border-transparent bg-transparent px-1.5 py-1 placeholder:text-gray-400 hover:border-[var(--tab-border)] focus:border-[var(--tab-brand)] focus:bg-white focus:outline-none ${
           align === "right" ? "text-right font-[var(--tab-mono)] tabular-nums" : ""
         }`}
       />

@@ -29,18 +29,22 @@ def reconcile(
 
     # Establish the opening balance to anchor the chain.
     opening: Optional[int] = None
+    opening_backcomputed = False
     if opening_row is not None:
         opening = opening_row.balance
     elif txns and txns[0].balance is not None:
-        # Back-compute the opening from the first row's stated balance.
+        # Back-compute the opening from the first row's stated balance. This
+        # makes the first row reconcile by construction, so it is NOT an
+        # independent check — we exclude it from the confidence denominator.
         opening = txns[0].balance - _movement(txns[0])
+        opening_backcomputed = True
 
     out_rows: list[Transaction] = []
     prev: Optional[int] = opening
     checkable = 0
     reconciled_count = 0
 
-    for row in txns:
+    for idx, row in enumerate(txns):
         movement = _movement(row)
         reconciled = True
         flag: Optional[str] = None
@@ -58,9 +62,14 @@ def reconcile(
             prev = balance
         else:
             expected = prev + movement
-            checkable += 1
+            # The back-computed opening guarantees row 0 ties out; don't let that
+            # synthetic pass inflate confidence.
+            counts = not (opening_backcomputed and idx == 0)
+            if counts:
+                checkable += 1
             if abs(expected - balance) <= tolerance_pence:
-                reconciled_count += 1
+                if counts:
+                    reconciled_count += 1
             else:
                 reconciled = False
                 diff = pence_to_pounds(balance - expected)

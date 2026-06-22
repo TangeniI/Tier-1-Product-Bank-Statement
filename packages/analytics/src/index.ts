@@ -11,7 +11,7 @@ export type AnalyticsEvent =
   | { name: "demo_upload_started"; props: { pageCount?: number } }
   | { name: "extraction_completed"; props: { bankProfile: string; confidence: number; flaggedRows: number } }
   | { name: "row_edited"; props: Record<string, never> }
-  | { name: "export_clicked"; props: { format: "csv" | "xlsx"; preset: string } }
+  | { name: "export_clicked"; props: { format: "csv" | "xlsx" | "ofx"; preset: string } }
   | { name: "paywall_hit"; props: { pageCount: number } };
 
 export interface Tracker {

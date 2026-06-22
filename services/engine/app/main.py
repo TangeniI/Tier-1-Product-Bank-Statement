@@ -14,19 +14,19 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from .config import MAX_PAGES
-from .export import list_presets, to_csv, to_xlsx
+from .config import ALLOWED_ORIGINS, MAX_EXPORT_ROWS, MAX_PAGES
+from .export import list_presets, to_csv, to_ofx, to_xlsx
 from .ingest import ingest_pdf
 from .pipeline import extract
 from .schema import ExportRequest, ExtractionResult
 
 app = FastAPI(title="Tabular Engine", version="0.1.0")
 
-# The Next.js app calls the engine server-side; CORS is permissive in dev and
-# should be locked to the app origin in production via env.
+# The Next.js app calls the engine server-side. CORS defaults to permissive for
+# local dev; set ENGINE_ALLOWED_ORIGINS to the app origin(s) in production.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -61,15 +61,25 @@ async def extract_endpoint(file: UploadFile = File(...)) -> ExtractionResult:
             detail=f"Statement has {doc.page_count} pages; the limit is {MAX_PAGES}.",
         )
 
-    return extract(data)
+    # Reuse the doc we just parsed for the guard — don't re-ingest.
+    return extract(data, doc=doc)
 
 
 @app.post("/export")
 def export_endpoint(req: ExportRequest) -> StreamingResponse:
+    if len(req.rows) > MAX_EXPORT_ROWS:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Too many rows ({len(req.rows)}); the limit is {MAX_EXPORT_ROWS}.",
+        )
     if req.format == "csv":
         payload = to_csv(req.rows, req.preset)
         media = "text/csv"
         ext = "csv"
+    elif req.format == "ofx":
+        payload = to_ofx(req.rows, req.preset)
+        media = "application/x-ofx"
+        ext = "ofx"
     else:
         payload = to_xlsx(req.rows, req.preset)
         media = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

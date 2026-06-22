@@ -8,18 +8,29 @@ name: barclays
 label: "Barclays"
 priority: 10
 
-# Case-insensitive regexes; a profile matches if ANY hits the document text.
+# Case-insensitive regexes. The profile qualifies only when at least
+# `min_matches` distinct patterns hit, so a stray "payment to Barclays" on
+# another bank's statement won't misclassify it. These are letterhead/identity
+# signals, not transaction-line text.
 match:
-  - "Barclays"
   - "Barclays Bank UK PLC"
+  - "barclays\\.co\\.uk"
+  - "\\bBarclaycard\\b"
+  - "Registered in England.*Barclays"
+min_matches: 1
 
 # Date formats tried in order (Python strptime). Statements in this layout use
-# day-month-year.
+# day-month-year, but many real Barclays statements print the day-month only
+# (e.g. "02 Apr") and leave the year to the period header — the yearless formats
+# below are resolved against the statement period (see normalize.parse_date).
 date_formats:
   - "%d %b %Y"
   - "%d %b %y"
   - "%d/%m/%Y"
   - "%d %B %Y"
+  - "%d %b"
+  - "%d %B"
+  - "%d/%m"
 
 # Header labels that identify each column. The parser locates the header line by
 # finding these tokens, then derives x-position bands for each column. Order

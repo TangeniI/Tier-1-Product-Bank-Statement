@@ -4,6 +4,7 @@ transactions_only: false
 columns:
   - { header: "Date", source: date }
   - { header: "Description", source: description }
+  - { header: "Category", source: category }
   - { header: "Money In", source: money_in }
   - { header: "Money Out", source: money_out }
   - { header: "Balance", source: balance }

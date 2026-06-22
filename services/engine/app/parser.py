@@ -123,15 +123,26 @@ def _contains_any(text: str, markers: tuple[str, ...]) -> bool:
     return any(m.lower() in low for m in markers)
 
 
-def parse_document(doc: IngestedDoc, profile: BankProfile) -> tuple[list[RawRow], list[str]]:
+def parse_document(
+    doc: IngestedDoc,
+    profile: BankProfile,
+    period: Optional[tuple[str, str]] = None,
+    default_year: Optional[int] = None,
+) -> tuple[list[RawRow], list[str]]:
     """Parse every page into raw rows. Header bands carry over to pages that
-    repeat the statement body without re-printing the header."""
+    repeat the statement body without re-printing the header.
+
+    `period`/`default_year` resolve the year for statements that print yearless
+    dates (e.g. "02 Apr") — see normalize.parse_date.
+    """
     rows: list[RawRow] = []
     warnings: list[str] = []
     last_centers: Optional[dict[str, float]] = None
 
     for page in doc.pages:
-        page_rows, last_centers = _parse_page(page, profile, last_centers)
+        page_rows, last_centers = _parse_page(
+            page, profile, last_centers, period, default_year
+        )
         rows.extend(page_rows)
 
     if last_centers is None:
@@ -142,7 +153,11 @@ def parse_document(doc: IngestedDoc, profile: BankProfile) -> tuple[list[RawRow]
 
 
 def _parse_page(
-    page: IngestedPage, profile: BankProfile, carry_centers: Optional[dict[str, float]]
+    page: IngestedPage,
+    profile: BankProfile,
+    carry_centers: Optional[dict[str, float]],
+    period: Optional[tuple[str, str]] = None,
+    default_year: Optional[int] = None,
 ) -> tuple[list[RawRow], Optional[dict[str, float]]]:
     lines = _group_lines(page.words)
     centers = _find_header(lines, profile)
@@ -172,7 +187,7 @@ def _parse_page(
         out_pence = parse_amount(cells.get("money_out", ""))
         in_pence = parse_amount(cells.get("money_in", ""))
         bal_pence = parse_amount(cells.get("balance", ""))
-        date_iso = parse_date(date_cell, profile.date_formats)
+        date_iso = parse_date(date_cell, profile.date_formats, period, default_year)
         has_movement = out_pence is not None or in_pence is not None
 
         # Opening / closing balance anchors (balance only, no movement).

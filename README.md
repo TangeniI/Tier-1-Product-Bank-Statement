@@ -6,9 +6,16 @@ Turn a bank/credit-card statement PDF into a clean, accurate **CSV or Excel** fi
 
 ## What's here (Increment 1 — vertical slice)
 A demoable end-to-end slice for **one bank** (Barclays-style, text-layer PDFs):
-upload → layout-aware extraction → **balance reconciliation + confidence + row flagging** → inline edit → export CSV/XLSX with accounting presets (Xero / QuickBooks / FreeAgent).
+upload → layout-aware extraction → **balance reconciliation + confidence + row flagging** → first-pass categorisation → inline edit (with live re-reconciliation) → export CSV/XLSX/**OFX·QBO** with accounting presets (Xero / QuickBooks / FreeAgent).
 
-Deferred to later increments: live Supabase auth, live Stripe billing, OCR/scanned PDFs, banks #2–3, SEO/programmatic pages, deployment. Those packages (`auth`, `billing`, `analytics`) are built here as typed skeletons.
+Notable engine capabilities:
+- **Yearless dates** ("02 Apr") are resolved from the statement period, including the Dec→Jan year boundary.
+- **Keyword categorisation** (`categories.yaml`, data not code) gives every row a first-pass nominal category the user can correct.
+- **Duplicate detection** flags repeated (date, amount, description) rows.
+- **Live re-reconciliation**: the web UI re-checks the running balance on every edit (`apps/tabular/lib/reconcile.ts` mirrors the engine), so the trust signals never go stale.
+- **Accuracy harness** (`services/engine/scripts/eval.py`) prints a per-statement reconciliation scorecard; CI runs tests + the scorecard + the web build.
+
+Deferred to later increments: live Supabase auth, live Stripe billing, OCR/scanned PDFs (the natural home for an LLM extractor verified by reconciliation), more banks, SEO/programmatic pages, deployment. Those packages (`auth`, `billing`, `analytics`) are built here as typed skeletons.
 
 ## Monorepo layout
 ```

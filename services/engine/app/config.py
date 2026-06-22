@@ -11,6 +11,15 @@ PRESETS_DIR = APP_DIR / "presets"
 # Max pages accepted per upload (cost + abuse guard).
 MAX_PAGES = int(os.environ.get("ENGINE_MAX_PAGES", "20"))
 
+# Max rows accepted on the /export endpoint (abuse guard for the edited payload).
+MAX_EXPORT_ROWS = int(os.environ.get("ENGINE_MAX_EXPORT_ROWS", "10000"))
+
+# Allowed CORS origins, comma-separated. Defaults to "*" for local dev; set to
+# the app origin(s) in production (e.g. "https://app.tabular.example").
+ALLOWED_ORIGINS = [
+    o.strip() for o in os.environ.get("ENGINE_ALLOWED_ORIGINS", "*").split(",") if o.strip()
+]
+
 # Reconciliation tolerance in pence. Real statements occasionally round; 1p
 # absorbs nothing meaningful but keeps exact-match strictness as the default.
 RECONCILE_TOLERANCE_PENCE = int(os.environ.get("ENGINE_RECONCILE_TOLERANCE_PENCE", "1"))

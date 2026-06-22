@@ -54,17 +54,33 @@ EXPECTED = {
 }
 
 
-def build_pdf(path: Path) -> None:
-    from reportlab.lib.pagesizes import A4
-    from reportlab.pdfgen import canvas
+# Yearless variant: identical statement, but the transaction dates omit the
+# year (as most real Barclays statements do) — the year lives only in the
+# period line. The engine must resolve every date to 2026 from that period.
+PERIOD_LINE = "Statement of account · 01 Apr 2026 to 30 Apr 2026"
+YEARLESS_TRANSACTIONS = [
+    (d.replace(" 2026", ""), desc, out, inn, bal, cont)
+    for (d, desc, out, inn, bal, cont) in TRANSACTIONS
+]
 
-    width, height = A4
-    c = canvas.Canvas(str(path), pagesize=A4)
+# Year-boundary variant: a statement spanning Dec 2025 → Jan 2026 with yearless
+# dates. December rows must resolve to 2025 and January rows to 2026.
+BOUNDARY_PERIOD_LINE = "Statement of account · 15 Dec 2025 to 14 Jan 2026"
+BOUNDARY_OPENING = "500.00"
+BOUNDARY_CLOSING = "560.00"
+BOUNDARY_TRANSACTIONS = [
+    ("20 Dec", "Card payment to TESCO STORES", "40.00", None, "460.00", None),
+    ("28 Dec", "Salary ACME LTD", None, "100.00", "560.00", None),
+    ("05 Jan", "Interest paid", None, "0.00", "560.00", None),
+]
+BOUNDARY_EXPECTED_DATES = ["2025-12-20", "2025-12-28", "2026-01-05"]
 
+
+def _draw_statement(c, height, period_line, opening, closing, transactions) -> None:
     c.setFont("Helvetica-Bold", 14)
     c.drawString(DATE_X, height - 50, BANK_HEADER)
     c.setFont("Helvetica", 9)
-    c.drawString(DATE_X, height - 68, "Statement of account · 01 Apr 2026 to 30 Apr 2026")
+    c.drawString(DATE_X, height - 68, period_line)
 
     # Column headers.
     y = height - 110
@@ -78,9 +94,9 @@ def build_pdf(path: Path) -> None:
     c.setFont("Helvetica", 9)
     y -= 22
     c.drawString(DESC_X, y, "Balance brought forward")
-    c.drawRightString(BAL_RIGHT, y, OPENING_BALANCE)
+    c.drawRightString(BAL_RIGHT, y, opening)
 
-    for date, desc, out, inn, bal, cont in TRANSACTIONS:
+    for date, desc, out, inn, bal, cont in transactions:
         y -= 18
         c.drawString(DATE_X, y, date)
         c.drawString(DESC_X, y, desc)
@@ -96,10 +112,39 @@ def build_pdf(path: Path) -> None:
     y -= 18
     c.setFont("Helvetica-Bold", 9)
     c.drawString(DESC_X, y, "Balance carried forward")
-    c.drawRightString(BAL_RIGHT, y, CLOSING_BALANCE)
+    c.drawRightString(BAL_RIGHT, y, closing)
 
+
+def _render(path: Path, period_line, opening, closing, transactions) -> None:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+
+    _width, height = A4
+    c = canvas.Canvas(str(path), pagesize=A4)
+    _draw_statement(c, height, period_line, opening, closing, transactions)
     c.showPage()
     c.save()
+
+
+def build_pdf(path: Path) -> None:
+    """The canonical year-bearing fixture."""
+    _render(path, PERIOD_LINE, OPENING_BALANCE, CLOSING_BALANCE, TRANSACTIONS)
+
+
+def build_yearless_pdf(path: Path) -> None:
+    """Same statement with yearless transaction dates."""
+    _render(path, PERIOD_LINE, OPENING_BALANCE, CLOSING_BALANCE, YEARLESS_TRANSACTIONS)
+
+
+def build_boundary_pdf(path: Path) -> None:
+    """Yearless statement spanning the Dec→Jan year boundary."""
+    _render(
+        path,
+        BOUNDARY_PERIOD_LINE,
+        BOUNDARY_OPENING,
+        BOUNDARY_CLOSING,
+        BOUNDARY_TRANSACTIONS,
+    )
 
 
 if __name__ == "__main__":

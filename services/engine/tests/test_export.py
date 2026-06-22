@@ -3,7 +3,7 @@ import io
 
 import pandas as pd
 
-from app.export import build_dataframe, list_presets, to_csv, to_xlsx
+from app.export import build_dataframe, list_presets, to_csv, to_ofx, to_xlsx
 from app.schema import Transaction
 
 ROWS = [
@@ -19,7 +19,9 @@ def test_presets_listed():
 
 def test_default_preset_columns():
     df = build_dataframe(ROWS, "default")
-    assert list(df.columns) == ["Date", "Description", "Money In", "Money Out", "Balance"]
+    assert list(df.columns) == [
+        "Date", "Description", "Category", "Money In", "Money Out", "Balance"
+    ]
 
 
 def test_xero_signed_amount_and_date_format():
@@ -37,3 +39,20 @@ def test_csv_and_xlsx_roundtrip():
     xlsx_bytes = to_xlsx(ROWS, "default")
     df = pd.read_excel(io.BytesIO(xlsx_bytes))
     assert len(df) == 2
+
+
+def test_ofx_structure_and_signed_amounts():
+    ofx = to_ofx(ROWS).decode("ascii")
+    assert "OFXHEADER:100" in ofx
+    assert "<TRNTYPE>DEBIT" in ofx  # money out
+    assert "<TRNTYPE>CREDIT" in ofx  # money in
+    assert "<TRNAMT>-45.50" in ofx
+    assert "<TRNAMT>2000.00" in ofx
+    assert "<DTPOSTED>20260402" in ofx
+    # One FITID per transaction, all distinct (lets importers dedupe).
+    fitids = [ln for ln in ofx.split("<FITID>")[1:]]
+    assert len({f[:20] for f in fitids}) == 2
+    assert "&amp;" not in ofx  # no unescaped entities issues here
+
+    ofx_amp = to_ofx([Transaction(date="2026-04-02", description="A & B Ltd", money_in=10.0)])
+    assert "A &amp; B Ltd" in ofx_amp.decode("ascii")

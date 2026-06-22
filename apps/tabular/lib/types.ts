@@ -6,6 +6,7 @@ export interface Transaction {
   money_in: number | null;
   money_out: number | null;
   balance: number | null;
+  category: string | null;
   reconciled: boolean;
   flag_reason: string | null;
 }

@@ -16,6 +16,7 @@ class BankProfile:
     label: str
     priority: int
     match: tuple[str, ...]
+    min_matches: int
     date_formats: tuple[str, ...]
     columns: dict[str, tuple[str, ...]]
     amount: dict
@@ -31,6 +32,7 @@ class BankProfile:
             label=d.get("label", d["name"]),
             priority=int(d.get("priority", 0)),
             match=tuple(d.get("match") or ()),
+            min_matches=int(d.get("min_matches", 1)),
             date_formats=tuple(d.get("date_formats") or ()),
             columns=cols,
             amount=dict(d.get("amount") or {}),
@@ -58,18 +60,24 @@ def get_generic_profile() -> BankProfile:
 
 
 def match_profile(document_text: str) -> BankProfile:
-    """Pick the highest-priority profile whose `match` regexes hit the text.
+    """Pick the best profile for a statement.
 
-    Falls back to the generic profile when nothing matches.
+    A profile qualifies only when at least `min_matches` of its distinct `match`
+    patterns hit the text — so a stray mention of a bank's name in a transaction
+    line (e.g. "payment to Barclays" on a Monzo statement) doesn't misclassify
+    the whole document. Among qualifiers we maximise (priority, match count);
+    nothing qualifying falls back to the generic profile.
     """
-    candidates: list[BankProfile] = []
+    scored: list[tuple[int, int, BankProfile]] = []
     for profile in load_profiles():
         if not profile.match:
             continue
-        for pattern in profile.match:
-            if re.search(pattern, document_text, re.IGNORECASE):
-                candidates.append(profile)
-                break
-    if not candidates:
+        hits = sum(
+            1 for pattern in profile.match
+            if re.search(pattern, document_text, re.IGNORECASE)
+        )
+        if hits >= profile.min_matches:
+            scored.append((profile.priority, hits, profile))
+    if not scored:
         return get_generic_profile()
-    return max(candidates, key=lambda p: p.priority)
+    return max(scored, key=lambda s: (s[0], s[1]))[2]

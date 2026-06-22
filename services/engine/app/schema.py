@@ -20,6 +20,7 @@ class Transaction(BaseModel):
     money_in: Optional[float] = None
     money_out: Optional[float] = None
     balance: Optional[float] = None
+    category: Optional[str] = None
     reconciled: bool = True
     flag_reason: Optional[str] = None
 
@@ -47,6 +48,6 @@ class ExtractionResult(BaseModel):
 
 class ExportRequest(BaseModel):
     rows: list[Transaction]
-    format: Literal["csv", "xlsx"] = "csv"
+    format: Literal["csv", "xlsx", "ofx"] = "csv"
     preset: str = "default"
     filename: str = "statement"

@@ -1,0 +1,32 @@
+# Default UK bookkeeping categorisation rules — data, not code, so they can be
+# tuned or replaced per customer/firm without touching the engine. The first
+# category whose keywords match the (lower-cased) description wins; order is
+# therefore priority. Anything unmatched is left for the user to assign.
+#
+# This is a deterministic v1 (keyword rules). A learned/Bayesian classifier that
+# adapts to a user's corrections is the natural successor — see README roadmap.
+rules:
+  - category: "Income / Sales"
+    keywords: ["salary", "payroll", "faster payment from", "bacs credit", "invoice", "stripe", "gocardless", "sumup", "interest paid"]
+  - category: "Bank Charges & Interest"
+    keywords: ["charge", "overdraft", "interest charged", "fee", "service charge"]
+  - category: "Tax & HMRC"
+    keywords: ["hmrc", "vat", "paye", "corporation tax", "self assessment"]
+  - category: "Rent & Premises"
+    keywords: ["rent", "landlord", "lease", "business rates"]
+  - category: "Utilities"
+    keywords: ["british gas", "edf", "octopus energy", "thames water", "bt", "vodafone", "ee ", "o2", "broadband", "energy"]
+  - category: "Software & Subscriptions"
+    keywords: ["aws", "amazon web", "google", "microsoft", "adobe", "xero", "quickbooks", "slack", "notion", "subscription", "saas"]
+  - category: "Travel & Transport"
+    keywords: ["uber", "trainline", "tfl", "railway", "petrol", "fuel", "parking", "easyjet", "british airways", "atm withdrawal"]
+  - category: "Meals & Entertainment"
+    keywords: ["restaurant", "cafe", "coffee", "costa", "pret", "deliveroo", "just eat", "pub"]
+  - category: "Groceries & Supplies"
+    keywords: ["tesco", "sainsbury", "asda", "aldi", "lidl", "morrisons", "waitrose", "co-op", "amazon"]
+  - category: "Office & Equipment"
+    keywords: ["staples", "ryman", "currys", "office", "stationery"]
+  - category: "Insurance"
+    keywords: ["insurance", "aviva", "axa", "direct line"]
+  - category: "Professional Fees"
+    keywords: ["solicitor", "accountant", "consultant", "legal", "audit"]

@@ -12,6 +12,9 @@ date_formats:
   - "%d-%m-%Y"
   - "%Y-%m-%d"
   - "%d %B %Y"
+  - "%d %b"
+  - "%d %B"
+  - "%d/%m"
 
 columns:
   date: ["Date", "Trans date", "Transaction date"]

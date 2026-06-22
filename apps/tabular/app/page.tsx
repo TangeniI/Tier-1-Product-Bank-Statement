@@ -71,9 +71,9 @@ export default function Home() {
             Convert a bank statement PDF to clean CSV or Excel
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-gray-600">
-            Every row is verified against your statement&apos;s own running
-            balance, so the numbers are right. We never store your statements or
-            train on your data.
+            Every row is checked against your statement&apos;s own running
+            balance, and anything that doesn&apos;t add up is flagged for you to
+            review. We never store your statements or train on your data.
           </p>
         </section>
       )}
@@ -121,9 +121,17 @@ export default function Home() {
         </section>
       )}
 
-      <footer className="mt-16 border-t border-[var(--tab-border)] pt-6 text-center text-xs text-gray-400">
-        Tabular · Statements processed in memory and deleted after conversion ·
-        We don&apos;t train on your data.
+      <footer className="mt-16 space-y-2 border-t border-[var(--tab-border)] pt-6 text-center text-xs text-gray-400">
+        <p>
+          Tabular · Statements processed in memory and deleted after conversion ·
+          We don&apos;t train on your data.
+        </p>
+        <p className="mx-auto max-w-2xl">
+          Tabular verifies each row against the running balance printed on your
+          statement — it does not verify the underlying bank data. Always review
+          flagged rows; you remain responsible for checking the exported file
+          before using it for accounting or tax.
+        </p>
       </footer>
     </main>
   );
