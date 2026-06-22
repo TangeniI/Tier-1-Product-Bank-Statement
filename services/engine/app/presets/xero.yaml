@@ -1,0 +1,9 @@
+name: xero
+label: "Xero — Bank Statement import"
+transactions_only: true
+columns:
+  - { header: "Date", source: date, date_format: "%d/%m/%Y" }
+  - { header: "Amount", source: signed_amount }
+  - { header: "Payee", source: description }
+  - { header: "Description", source: description }
+  - { header: "Reference", source: empty }

@@ -1,0 +1,21 @@
+{
+  "name": "tabular-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tabular — turn a bank/credit-card statement PDF into a clean, reconciled CSV/Excel file.",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "dev:all": "node scripts/dev-all.mjs"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  }
+}

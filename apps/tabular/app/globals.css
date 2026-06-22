@@ -1,0 +1,10 @@
+@import "@tabular/ui/styles.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background: var(--tab-surface-muted);
+  color: var(--tab-ink);
+}

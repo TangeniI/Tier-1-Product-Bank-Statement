@@ -1,0 +1,7 @@
+name: freeagent
+label: "FreeAgent — Bank upload CSV"
+transactions_only: true
+columns:
+  - { header: "Date", source: date, date_format: "%d/%m/%Y" }
+  - { header: "Amount", source: signed_amount }
+  - { header: "Description", source: description }

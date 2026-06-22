@@ -1,0 +1,15 @@
+/* Tabular shared CSS variables, derived from tokens.ts. Imported once by each app. */
+:root {
+  --tab-ink: #0c1322;
+  --tab-surface: #ffffff;
+  --tab-surface-muted: #f5f7fa;
+  --tab-border: #dce1e8;
+  --tab-brand: #0e7c86;
+  --tab-brand-dark: #0a5b62;
+  --tab-reconciled: #15803d;
+  --tab-flagged: #b45309;
+  --tab-error: #b91c1c;
+  --tab-radius-sm: 6px;
+  --tab-radius-md: 10px;
+  --tab-radius-lg: 16px;
+}

@@ -1,0 +1,54 @@
+# Bank profile: Barclays personal current account (text-layer PDF).
+#
+# Profiles are data, not code — adding a bank = adding one of these files.
+# The loader auto-matches a profile by searching `match` regexes against the
+# statement's text; `priority` breaks ties (higher wins). A generic fallback
+# profile handles anything unmatched.
+name: barclays
+label: "Barclays"
+priority: 10
+
+# Case-insensitive regexes; a profile matches if ANY hits the document text.
+match:
+  - "Barclays"
+  - "Barclays Bank UK PLC"
+
+# Date formats tried in order (Python strptime). Statements in this layout use
+# day-month-year.
+date_formats:
+  - "%d %b %Y"
+  - "%d %b %y"
+  - "%d/%m/%Y"
+  - "%d %B %Y"
+
+# Header labels that identify each column. The parser locates the header line by
+# finding these tokens, then derives x-position bands for each column. Order
+# here is the visual left-to-right order.
+columns:
+  date: ["Date"]
+  description: ["Description", "Payment type and details", "Details"]
+  money_out: ["Money out", "Paid out", "Withdrawn", "Money Out"]
+  money_in: ["Money in", "Paid in", "Money In"]
+  balance: ["Balance"]
+
+amount:
+  thousands_sep: ","
+  decimal_sep: "."
+  # Tokens that mark a credit (money in) when amounts share one column. Unused
+  # here because Barclays uses separate in/out columns, but kept for reuse.
+  credit_markers: ["CR"]
+  debit_markers: ["DR"]
+
+# Rows whose first cell is not a date are treated as continuation lines and
+# appended to the previous transaction's description (multi-line descriptions).
+multiline_description: true
+
+# Lines containing any of these (and no movement) anchor the opening balance.
+opening_balance_markers:
+  - "Balance brought forward"
+  - "Opening balance"
+  - "Start balance"
+closing_balance_markers:
+  - "Balance carried forward"
+  - "Closing balance"
+  - "End balance"

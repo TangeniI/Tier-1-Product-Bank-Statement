@@ -1,0 +1,36 @@
+# Generic fallback profile — used when no bank-specific profile matches.
+# Deliberately broad header synonyms so it parses many layouts at lower
+# confidence. A matched bank profile always wins over this.
+name: generic
+label: "Generic statement"
+priority: 0
+match: []  # never auto-matches; only used as explicit fallback
+
+date_formats:
+  - "%d %b %Y"
+  - "%d/%m/%Y"
+  - "%d-%m-%Y"
+  - "%Y-%m-%d"
+  - "%d %B %Y"
+
+columns:
+  date: ["Date", "Trans date", "Transaction date"]
+  description: ["Description", "Details", "Payment type and details", "Narrative", "Reference"]
+  money_out: ["Money out", "Paid out", "Withdrawn", "Debit", "Out"]
+  money_in: ["Money in", "Paid in", "Credit", "In"]
+  balance: ["Balance", "Running balance"]
+
+amount:
+  thousands_sep: ","
+  decimal_sep: "."
+  credit_markers: ["CR"]
+  debit_markers: ["DR"]
+
+multiline_description: true
+
+opening_balance_markers:
+  - "Balance brought forward"
+  - "Opening balance"
+closing_balance_markers:
+  - "Balance carried forward"
+  - "Closing balance"

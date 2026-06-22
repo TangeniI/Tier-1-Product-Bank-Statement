@@ -1,0 +1,7 @@
+name: quickbooks
+label: "QuickBooks — 3-column CSV"
+transactions_only: true
+columns:
+  - { header: "Date", source: date, date_format: "%d/%m/%Y" }
+  - { header: "Description", source: description }
+  - { header: "Amount", source: signed_amount }
