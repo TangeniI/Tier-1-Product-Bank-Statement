@@ -86,9 +86,13 @@ def _find_header(lines: list[_Line], profile: BankProfile) -> Optional[dict[str,
             c = _match_label_center(line, labels)
             if c is not None:
                 centers[field_name] = c
-        if "date" in centers and "balance" in centers and (
-            "money_in" in centers or "money_out" in centers
-        ):
+        # A header qualifies with a date, a balance, and at least one movement
+        # column — either the split money in/out pair or a single signed Amount
+        # column (the layout many credit-card / challenger-bank statements use).
+        has_movement_col = (
+            "money_in" in centers or "money_out" in centers or "amount" in centers
+        )
+        if "date" in centers and "balance" in centers and has_movement_col:
             return centers
     return None
 
@@ -186,6 +190,14 @@ def _parse_page(
         desc_cell = cells.get("description", "").strip()
         out_pence = parse_amount(cells.get("money_out", ""))
         in_pence = parse_amount(cells.get("money_in", ""))
+        # Single signed "Amount" column: split it into the in/out magnitudes the
+        # rest of the pipeline expects (positive = money in, negative = money out).
+        amount_pence = parse_amount(cells.get("amount", ""))
+        if amount_pence is not None and out_pence is None and in_pence is None:
+            if amount_pence < 0:
+                out_pence = amount_pence
+            else:
+                in_pence = amount_pence
         bal_pence = parse_amount(cells.get("balance", ""))
         date_iso = parse_date(date_cell, profile.date_formats, period, default_year)
         has_movement = out_pence is not None or in_pence is not None

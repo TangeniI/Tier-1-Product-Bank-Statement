@@ -1,0 +1,19 @@
+# Render blueprint for the Tabular extraction engine (Python/FastAPI).
+# The Next.js web app deploys separately on Vercel (see DEPLOY.md).
+services:
+  - type: web
+    name: tabular-engine
+    runtime: docker
+    dockerfilePath: ./services/engine/Dockerfile
+    dockerContext: ./services/engine
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      # Lock CORS to your Vercel app origin once deployed.
+      - key: ENGINE_ALLOWED_ORIGINS
+        sync: false
+      # Optional: enables AI extraction for scanned PDFs.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ENGINE_MAX_PAGES
+        value: "20"

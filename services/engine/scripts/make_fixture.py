@@ -147,6 +147,70 @@ def build_boundary_pdf(path: Path) -> None:
     )
 
 
+# --- Starling-style fixture: single signed "Amount" column ------------------
+STARLING_HEADER = "Starling Bank Limited"
+STARLING_PERIOD = "Statement period · 01 May 2026 to 31 May 2026"
+STARLING_OPENING = "1,000.00"
+STARLING_CLOSING = "1,734.50"
+# date (yearless), description, amount (signed), balance
+STARLING_TRANSACTIONS = [
+    ("02 May", "TESCO STORES", "-45.50", "954.50"),
+    ("05 May", "Salary ACME LTD", "2,000.00", "2,954.50"),
+    ("09 May", "BRITISH GAS ENERGY", "-120.00", "2,834.50"),
+    ("18 May", "Transfer to savings", "-1,100.00", "1,734.50"),
+]
+STARLING_EXPECTED = {
+    "bank_profile": "starling",
+    "row_count": 4,
+    "flagged_count": 0,
+    "opening_balance": 1000.00,
+    "closing_balance": 1734.50,
+    "balanced": True,
+}
+
+
+def build_starling_pdf(path: Path) -> None:
+    """Single-Amount-column statement with yearless dates (different layout)."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+
+    width, height = A4
+    c = canvas.Canvas(str(path), pagesize=A4)
+    amount_right = 470
+
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(DATE_X, height - 50, STARLING_HEADER)
+    c.setFont("Helvetica", 9)
+    c.drawString(DATE_X, height - 68, STARLING_PERIOD)
+
+    y = height - 110
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(DATE_X, y, "Date")
+    c.drawString(DESC_X, y, "Description")
+    c.drawRightString(amount_right, y, "Amount")
+    c.drawRightString(BAL_RIGHT, y, "Balance")
+
+    c.setFont("Helvetica", 9)
+    y -= 22
+    c.drawString(DESC_X, y, "Opening balance")
+    c.drawRightString(BAL_RIGHT, y, STARLING_OPENING)
+
+    for date, desc, amt, bal in STARLING_TRANSACTIONS:
+        y -= 18
+        c.drawString(DATE_X, y, date)
+        c.drawString(DESC_X, y, desc)
+        c.drawRightString(amount_right, y, amt)
+        c.drawRightString(BAL_RIGHT, y, bal)
+
+    y -= 18
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(DESC_X, y, "Closing balance")
+    c.drawRightString(BAL_RIGHT, y, STARLING_CLOSING)
+
+    c.showPage()
+    c.save()
+
+
 if __name__ == "__main__":
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("barclays_sample.pdf")
     build_pdf(out)

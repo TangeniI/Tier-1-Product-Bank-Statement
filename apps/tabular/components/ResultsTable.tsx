@@ -5,6 +5,7 @@ import { Badge, Button, ConfidenceBadge } from "@tabular/ui";
 import { track } from "@tabular/analytics";
 import type { ExtractionResult, Preset, Transaction } from "@/lib/types";
 import { reconcile } from "@/lib/reconcile";
+import { applyLearned, learn } from "@/lib/categoryMemory";
 
 function money(n: number | null): string {
   return n == null ? "" : n.toFixed(2);
@@ -52,6 +53,12 @@ export function ResultsTable({ result }: { result: ExtractionResult }) {
       .catch(() => {});
   }, []);
 
+  // On mount (client only), apply categories the user has taught in this
+  // browser — their corrections override the engine's first-pass guesses.
+  React.useEffect(() => {
+    setRows((prev) => applyLearned(prev));
+  }, []);
+
   function updateCell(i: number, field: EditableField, value: string) {
     setRows((prev) => {
       const next = [...prev];
@@ -60,6 +67,8 @@ export function ResultsTable({ result }: { result: ExtractionResult }) {
         row[field] = value;
       } else if (field === "category") {
         row.category = value.trim() === "" ? null : value;
+        // Remember this correction for matching merchants, now and next time.
+        learn(row.description, row.category);
       } else {
         row[field] = parseMoney(value);
       }

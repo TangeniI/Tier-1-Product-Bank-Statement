@@ -92,8 +92,36 @@ export default function Home() {
             <li>✓ Deleted after processing</li>
           </ul>
           <p className="mt-4 text-center text-xs text-gray-400">
-            Supports Barclays today · more UK banks coming. First statement free.
+            Supports Barclays &amp; Starling today · more UK banks coming. Free to try.
           </p>
+
+          <div className="mt-12 grid gap-6 text-center sm:grid-cols-3">
+            {[
+              {
+                step: "1",
+                title: "Upload your PDF",
+                body: "Drop in a bank or credit-card statement. It's processed in memory and never stored.",
+              },
+              {
+                step: "2",
+                title: "We reconcile every row",
+                body: "Each transaction is checked against the statement's running balance. Anything that doesn't add up is flagged.",
+              },
+              {
+                step: "3",
+                title: "Export to your tool",
+                body: "Download clean CSV, Excel or an OFX/QBO bank feed — Xero, QuickBooks and FreeAgent ready.",
+              },
+            ].map((s) => (
+              <div key={s.step} className="rounded-[12px] border border-[var(--tab-border)] bg-white p-5 text-left">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-[var(--tab-brand-dark)]">
+                  {s.step}
+                </div>
+                <h3 className="mt-3 font-semibold">{s.title}</h3>
+                <p className="mt-1 text-sm text-gray-600">{s.body}</p>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
@@ -131,6 +159,14 @@ export default function Home() {
           statement — it does not verify the underlying bank data. Always review
           flagged rows; you remain responsible for checking the exported file
           before using it for accounting or tax.
+        </p>
+        <p className="flex justify-center gap-4">
+          <a href="/privacy" className="underline hover:text-gray-600">
+            Privacy
+          </a>
+          <a href="/terms" className="underline hover:text-gray-600">
+            Terms
+          </a>
         </p>
       </footer>
     </main>

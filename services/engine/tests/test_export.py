@@ -14,7 +14,17 @@ ROWS = [
 
 def test_presets_listed():
     names = {p["name"] for p in list_presets()}
-    assert {"default", "xero", "quickbooks", "freeagent"} <= names
+    assert {"default", "xero", "quickbooks", "freeagent", "uk_vat"} <= names
+
+
+def test_uk_vat_split():
+    rows = [Transaction(date="2026-04-15", description="AMAZON", money_out=120.00)]
+    df = build_dataframe(rows, "uk_vat")
+    assert list(df.columns) == ["Date", "Description", "Category", "Gross", "Net", "VAT (20%)"]
+    # 120 gross inc. VAT → 100 net + 20 VAT (signs follow money_out → negative).
+    assert df.iloc[0]["Gross"] == -120.00
+    assert df.iloc[0]["Net"] == -100.00
+    assert df.iloc[0]["VAT (20%)"] == -20.00
 
 
 def test_default_preset_columns():

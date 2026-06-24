@@ -48,12 +48,26 @@ def _signed_amount(t: Transaction) -> Optional[float]:
     return round((t.money_in or 0.0) - (t.money_out or 0.0), 2)
 
 
+def _vat_split(t: Transaction, rate: float) -> tuple[Optional[float], Optional[float]]:
+    """Split a gross amount into (net, VAT) at the given rate, assuming the
+    amount is VAT-inclusive. Returns (None, None) when there's no amount."""
+    gross = _signed_amount(t)
+    if gross is None:
+        return None, None
+    net = round(gross / (1 + rate), 2)
+    return net, round(gross - net, 2)
+
+
 def _cell(t: Transaction, col: dict):
     source = col["source"]
     if source == "empty":
         return ""
     if source == "signed_amount":
         return _signed_amount(t)
+    if source == "vat_net":
+        return _vat_split(t, float(col.get("rate", 0.20)))[0]
+    if source == "vat_amount":
+        return _vat_split(t, float(col.get("rate", 0.20)))[1]
     if source == "date":
         fmt = col.get("date_format")
         if fmt and t.date:

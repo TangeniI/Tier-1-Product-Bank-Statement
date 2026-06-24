@@ -1,0 +1,12 @@
+name: uk_vat
+label: "UK VAT (20% estimate)"
+transactions_only: true
+# Splits each (VAT-inclusive) amount into net + VAT at the UK standard rate.
+# Estimate only — not every transaction carries VAT; the bookkeeper confirms.
+columns:
+  - { header: "Date", source: date, date_format: "%d/%m/%Y" }
+  - { header: "Description", source: description }
+  - { header: "Category", source: category }
+  - { header: "Gross", source: signed_amount }
+  - { header: "Net", source: vat_net, rate: 0.20 }
+  - { header: "VAT (20%)", source: vat_amount, rate: 0.20 }

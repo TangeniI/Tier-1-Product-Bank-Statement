@@ -1,0 +1,48 @@
+# Bank profile: Starling-style personal account (text-layer PDF).
+#
+# Demonstrates the engine handling a structurally DIFFERENT layout from Barclays
+# — a single signed "Amount" column (positive = in, negative = out) instead of
+# separate money in/out columns. Adding it required no parser code, only this
+# file + the generic single-amount support: a bank = a YAML file.
+#
+# (Synthetic layout for the demo corpus; tune against real statements before
+# relying on it in production.)
+name: starling
+label: "Starling Bank"
+priority: 10
+
+match:
+  - "Starling Bank"
+  - "starling\\.com"
+  - "Starling Bank Limited"
+min_matches: 1
+
+date_formats:
+  - "%d %b %Y"
+  - "%d %b"
+  - "%d/%m/%Y"
+  - "%d/%m"
+
+# Note: a single `amount` column rather than money_in/money_out.
+columns:
+  date: ["Date"]
+  description: ["Description", "Reference", "Details"]
+  amount: ["Amount", "Money", "Value"]
+  balance: ["Balance"]
+
+amount:
+  thousands_sep: ","
+  decimal_sep: "."
+  credit_markers: ["CR"]
+  debit_markers: ["DR"]
+
+multiline_description: true
+
+opening_balance_markers:
+  - "Opening balance"
+  - "Balance brought forward"
+  - "Start balance"
+closing_balance_markers:
+  - "Closing balance"
+  - "Balance carried forward"
+  - "End balance"

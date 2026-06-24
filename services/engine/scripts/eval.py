@@ -29,6 +29,7 @@ CORPUS = [
     ("Barclays — year-bearing", make_fixture.build_pdf),
     ("Barclays — yearless dates", make_fixture.build_yearless_pdf),
     ("Barclays — Dec→Jan boundary", make_fixture.build_boundary_pdf),
+    ("Starling — single Amount col", make_fixture.build_starling_pdf),
 ]
 
 

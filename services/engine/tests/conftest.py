@@ -36,3 +36,12 @@ def barclays_boundary_pdf_bytes(tmp_path_factory) -> bytes:
     out = tmp_path_factory.mktemp("fixtures") / "barclays_boundary.pdf"
     build_boundary_pdf(out)
     return out.read_bytes()
+
+
+@pytest.fixture(scope="session")
+def starling_pdf_bytes(tmp_path_factory) -> bytes:
+    from make_fixture import build_starling_pdf
+
+    out = tmp_path_factory.mktemp("fixtures") / "starling.pdf"
+    build_starling_pdf(out)
+    return out.read_bytes()
