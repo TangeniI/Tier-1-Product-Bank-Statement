@@ -3,6 +3,8 @@ import { ENGINE_URL } from "@/lib/engine";
 
 // Proxy (possibly user-edited) rows to the engine and stream back the file.
 export const runtime = "nodejs";
+// Render's free engine cold-starts (~50s after idle); allow the proxy to wait.
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const payload = await req.text();
