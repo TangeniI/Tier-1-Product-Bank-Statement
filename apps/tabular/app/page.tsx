@@ -54,7 +54,11 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-5 py-10">
+    <main
+      className={`mx-auto px-5 py-10 transition-[max-width] ${
+        status === "done" ? "max-w-6xl" : "max-w-5xl"
+      }`}
+    >
       <header className="mb-8 flex items-center justify-between">
         <div className="text-xl font-bold tracking-tight">
           Tabular

@@ -20,8 +20,27 @@ from __future__ import annotations
 import base64
 import json
 import os
+import ssl
+import time
+import urllib.error
 import urllib.request
 from typing import Optional, Protocol
+
+# Transient HTTP statuses worth retrying, and backoff config.
+_RETRY_STATUS = {429, 500, 502, 503}
+_MAX_RETRIES = 3
+_BACKOFF_BASE = 1.5  # seconds: 1.5, 3.0, ...
+
+
+def _ssl_context() -> ssl.SSLContext:
+    """Verified TLS context. Prefer certifi's CA bundle when present so the call
+    works on machines whose Python lacks system CA certs (common on macOS)."""
+    try:
+        import certifi
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        return ssl.create_default_context()
 
 # Default model — fast + cheap, strong document understanding. Override with
 # LLM_MODEL. Provider/key via GEMINI_API_KEY.
@@ -98,16 +117,31 @@ class GeminiExtractor:
             },
         }
         url = _GEMINI_ENDPOINT.format(model=self.model)
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(body).encode("utf-8"),
-            headers={"Content-Type": "application/json", "x-goog-api-key": self.api_key},
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            payload = json.loads(resp.read().decode("utf-8"))
-        text = payload["candidates"][0]["content"]["parts"][0]["text"]
-        return json.loads(text)
+        data = json.dumps(body).encode("utf-8")
+        ctx = _ssl_context()
+
+        # Retry transient errors (rate limits / model busy) with backoff — Gemini
+        # returns 429/503 under load. Other errors fail fast.
+        last_exc: Exception | None = None
+        for attempt in range(_MAX_RETRIES):
+            req = urllib.request.Request(
+                url,
+                data=data,
+                headers={"Content-Type": "application/json", "x-goog-api-key": self.api_key},
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout, context=ctx) as resp:
+                    payload = json.loads(resp.read().decode("utf-8"))
+                text = payload["candidates"][0]["content"]["parts"][0]["text"]
+                return json.loads(text)
+            except urllib.error.HTTPError as e:
+                last_exc = e
+                if e.code in _RETRY_STATUS and attempt < _MAX_RETRIES - 1:
+                    time.sleep(_BACKOFF_BASE * (2**attempt))
+                    continue
+                raise
+        raise last_exc if last_exc else RuntimeError("LLM extraction failed")
 
 
 def get_extractor() -> Optional[LLMExtractor]:

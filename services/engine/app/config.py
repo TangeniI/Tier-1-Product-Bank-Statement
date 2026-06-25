@@ -8,6 +8,24 @@ APP_DIR = Path(__file__).resolve().parent
 PROFILES_DIR = APP_DIR / "profiles"
 PRESETS_DIR = APP_DIR / "presets"
 
+
+def _load_dotenv() -> None:
+    """Minimal .env loader (no extra dependency): read services/engine/.env if
+    present and populate os.environ for any keys not already set. Keeps secrets
+    like GEMINI_API_KEY out of the codebase — .env is git-ignored."""
+    env_path = APP_DIR.parent / ".env"
+    if not env_path.exists():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_dotenv()
+
 # Max pages accepted per upload (cost + abuse guard).
 MAX_PAGES = int(os.environ.get("ENGINE_MAX_PAGES", "20"))
 

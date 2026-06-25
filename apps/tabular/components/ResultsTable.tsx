@@ -117,6 +117,12 @@ export function ResultsTable({ result }: { result: ExtractionResult }) {
   const flaggedCount = recon.summary.flagged_rows;
   const s = recon.summary;
 
+  // Autocomplete categories from whatever's already in use (engine + learned).
+  const knownCategories = React.useMemo(
+    () => [...new Set(rows.map((r) => r.category).filter(Boolean))] as string[],
+    [rows],
+  );
+
   return (
     <div className="space-y-5">
       {/* Summary / trust bar */}
@@ -174,87 +180,82 @@ export function ResultsTable({ result }: { result: ExtractionResult }) {
 
       {/* Editable table */}
       <div className="overflow-x-auto rounded-[10px] border border-[var(--tab-border)] bg-white">
-        <table className="w-full border-collapse text-sm">
+        <table className="w-full min-w-[960px] border-collapse text-sm">
+          <colgroup>
+            <col style={{ width: "116px" }} />
+            <col style={{ minWidth: "200px" }} />
+            <col style={{ width: "200px" }} />
+            <col style={{ width: "108px" }} />
+            <col style={{ width: "108px" }} />
+            <col style={{ width: "120px" }} />
+            <col style={{ width: "104px" }} />
+          </colgroup>
           <thead>
             <tr className="border-b border-[var(--tab-border)] bg-[var(--tab-surface-muted)] text-left">
-              <th scope="col" className="px-3 py-2 font-medium">Date</th>
-              <th scope="col" className="px-3 py-2 font-medium">Description</th>
-              <th scope="col" className="px-3 py-2 font-medium">Category</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Money in</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Money out</th>
-              <th scope="col" className="px-3 py-2 text-right font-medium">Balance</th>
-              <th scope="col" className="px-3 py-2 font-medium">Status</th>
+              <th scope="col" className="whitespace-nowrap px-3 py-2.5 font-medium">Date</th>
+              <th scope="col" className="px-3 py-2.5 font-medium">Description</th>
+              <th scope="col" className="px-3 py-2.5 font-medium">Category</th>
+              <th scope="col" className="whitespace-nowrap px-3 py-2.5 text-right font-medium">Money in</th>
+              <th scope="col" className="whitespace-nowrap px-3 py-2.5 text-right font-medium">Money out</th>
+              <th scope="col" className="whitespace-nowrap px-3 py-2.5 text-right font-medium">Balance</th>
+              <th scope="col" className="px-3 py-2.5 font-medium">Status</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, i) => {
               const v = verified[i] ?? r;
+              const showReason = !v.reconciled && Boolean(v.flag_reason);
               return (
-              <tr
-                key={i}
-                className={`border-b border-[var(--tab-border)] last:border-0 ${
-                  !v.reconciled ? "bg-amber-50" : ""
-                }`}
-              >
-                <Cell row={i} col="date" value={r.date} onChange={updateCell} />
-                <Cell
-                  row={i}
-                  col="description"
-                  value={r.description}
-                  onChange={updateCell}
-                  wide
-                />
-                <Cell
-                  row={i}
-                  col="category"
-                  value={r.category ?? ""}
-                  onChange={updateCell}
-                  placeholder="Uncategorised"
-                />
-                <Cell
-                  row={i}
-                  col="money_in"
-                  value={money(r.money_in)}
-                  onChange={updateCell}
-                  align="right"
-                />
-                <Cell
-                  row={i}
-                  col="money_out"
-                  value={money(r.money_out)}
-                  onChange={updateCell}
-                  align="right"
-                />
-                <Cell
-                  row={i}
-                  col="balance"
-                  value={money(r.balance)}
-                  onChange={updateCell}
-                  align="right"
-                />
-                <td className="px-3 py-1.5">
-                  {v.reconciled ? (
-                    <Badge tone="reconciled">OK</Badge>
-                  ) : (
-                    <Badge tone="flagged">Review</Badge>
+                <React.Fragment key={i}>
+                  <tr
+                    className={`${!v.reconciled ? "bg-amber-50" : ""} ${
+                      showReason
+                        ? ""
+                        : "border-b border-[var(--tab-border)] last:border-0"
+                    }`}
+                  >
+                    <Cell row={i} col="date" value={r.date} onChange={updateCell} />
+                    <Cell row={i} col="description" value={r.description} onChange={updateCell} />
+                    <Cell
+                      row={i}
+                      col="category"
+                      value={r.category ?? ""}
+                      onChange={updateCell}
+                      placeholder="Uncategorised"
+                      list="tab-categories"
+                    />
+                    <Cell row={i} col="money_in" value={money(r.money_in)} onChange={updateCell} align="right" />
+                    <Cell row={i} col="money_out" value={money(r.money_out)} onChange={updateCell} align="right" />
+                    <Cell row={i} col="balance" value={money(r.balance)} onChange={updateCell} align="right" />
+                    <td className="px-3 py-1.5 align-middle">
+                      {v.reconciled ? (
+                        <Badge tone="reconciled">OK</Badge>
+                      ) : (
+                        <Badge tone="flagged">Review</Badge>
+                      )}
+                      <span className="sr-only">
+                        {v.reconciled ? "Reconciled" : v.flag_reason ?? "Needs review"}
+                      </span>
+                    </td>
+                  </tr>
+                  {showReason && (
+                    <tr className="border-b border-[var(--tab-border)] bg-amber-50 last:border-0">
+                      <td aria-hidden="true" />
+                      <td colSpan={6} className="px-3 pb-2.5 text-xs text-[var(--tab-flagged)]">
+                        {v.flag_reason}
+                      </td>
+                    </tr>
                   )}
-                  <span className="sr-only">
-                    {v.reconciled ? "Reconciled" : v.flag_reason ?? "Needs review"}
-                  </span>
-                  {!v.reconciled && v.flag_reason && (
-                    <span
-                      className="ml-2 hidden text-xs text-[var(--tab-flagged)] sm:inline"
-                      aria-hidden="true"
-                    >
-                      {v.flag_reason}
-                    </span>
-                  )}
-                </td>
-              </tr>
+                </React.Fragment>
               );
             })}
           </tbody>
         </table>
+        <datalist id="tab-categories">
+          {knownCategories.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
       </div>
 
       {flaggedCount > 0 && (
@@ -274,16 +275,16 @@ function Cell({
   value,
   onChange,
   align = "left",
-  wide = false,
   placeholder,
+  list,
 }: {
   row: number;
   col: EditableField;
   value: string;
   onChange: (row: number, col: EditableField, value: string) => void;
   align?: "left" | "right";
-  wide?: boolean;
   placeholder?: string;
+  list?: string;
 }) {
   // Spreadsheet-style keyboard flow: Enter moves to the same column one row down.
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -297,15 +298,16 @@ function Cell({
     }
   }
   return (
-    <td className={`px-2 py-1 ${wide ? "min-w-[240px]" : ""}`}>
+    <td className="px-2 py-1 align-middle">
       <input
         value={value}
         placeholder={placeholder}
+        list={list}
         data-cell={`${row}-${col}`}
         aria-label={`${col.replace("_", " ")}, row ${row + 1}`}
         onChange={(e) => onChange(row, col, e.target.value)}
         onKeyDown={onKeyDown}
-        className={`w-full rounded-[6px] border border-transparent bg-transparent px-1.5 py-1 placeholder:text-gray-400 hover:border-[var(--tab-border)] focus:border-[var(--tab-brand)] focus:bg-white focus:outline-none ${
+        className={`w-full rounded-[6px] border border-transparent bg-transparent px-2 py-1.5 placeholder:text-gray-400 hover:border-[var(--tab-border)] focus:border-[var(--tab-brand)] focus:bg-white focus:outline-none ${
           align === "right" ? "text-right font-[var(--tab-mono)] tabular-nums" : ""
         }`}
       />
