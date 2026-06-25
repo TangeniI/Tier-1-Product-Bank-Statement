@@ -38,6 +38,12 @@ ALLOWED_ORIGINS = [
     o.strip() for o in os.environ.get("ENGINE_ALLOWED_ORIGINS", "*").split(",") if o.strip()
 ]
 
+# Shared secret between the web app and the engine. CORS only restrains browsers;
+# this stops anyone who finds the engine URL from calling it directly (and burning
+# the LLM quota). When unset (local dev) the check is skipped. Set the SAME value
+# as ENGINE_API_TOKEN on both Render and Vercel to enable it.
+ENGINE_API_TOKEN = os.environ.get("ENGINE_API_TOKEN") or None
+
 # Reconciliation tolerance in pence. Real statements occasionally round; 1p
 # absorbs nothing meaningful but keeps exact-match strictness as the default.
 RECONCILE_TOLERANCE_PENCE = int(os.environ.get("ENGINE_RECONCILE_TOLERANCE_PENCE", "1"))

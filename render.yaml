@@ -15,5 +15,8 @@ services:
       # Optional: enables AI extraction for scanned PDFs.
       - key: GEMINI_API_KEY
         sync: false
+      # Shared secret — set the same value on Vercel to lock the engine to the app.
+      - key: ENGINE_API_TOKEN
+        sync: false
       - key: ENGINE_MAX_PAGES
         value: "20"

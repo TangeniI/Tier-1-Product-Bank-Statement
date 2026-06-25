@@ -10,11 +10,11 @@ Privacy: uploads are processed entirely in memory and never written to disk.
 """
 from __future__ import annotations
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from .config import ALLOWED_ORIGINS, MAX_EXPORT_ROWS, MAX_PAGES
+from .config import ALLOWED_ORIGINS, ENGINE_API_TOKEN, MAX_EXPORT_ROWS, MAX_PAGES
 from .export import list_presets, to_csv, to_ofx, to_xlsx
 from .ingest import ingest_pdf
 from .pipeline import extract
@@ -32,18 +32,27 @@ app.add_middleware(
 )
 
 
+def require_token(x_engine_token: str | None = Header(default=None)) -> None:
+    """Reject direct callers when a shared token is configured. Skipped (open)
+    when ENGINE_API_TOKEN is unset, so local dev is unaffected."""
+    if ENGINE_API_TOKEN and x_engine_token != ENGINE_API_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized.")
+
+
 @app.get("/healthz")
 def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
 
 @app.get("/presets")
-def presets() -> list[dict[str, str]]:
+def presets(_: None = Depends(require_token)) -> list[dict[str, str]]:
     return list_presets()
 
 
 @app.post("/extract", response_model=ExtractionResult)
-async def extract_endpoint(file: UploadFile = File(...)) -> ExtractionResult:
+async def extract_endpoint(
+    file: UploadFile = File(...), _: None = Depends(require_token)
+) -> ExtractionResult:
     if file.content_type not in ("application/pdf", "application/octet-stream", None):
         raise HTTPException(status_code=415, detail="Please upload a PDF file.")
     data = await file.read()
@@ -66,7 +75,9 @@ async def extract_endpoint(file: UploadFile = File(...)) -> ExtractionResult:
 
 
 @app.post("/export")
-def export_endpoint(req: ExportRequest) -> StreamingResponse:
+def export_endpoint(
+    req: ExportRequest, _: None = Depends(require_token)
+) -> StreamingResponse:
     if len(req.rows) > MAX_EXPORT_ROWS:
         raise HTTPException(
             status_code=413,

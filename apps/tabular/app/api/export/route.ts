@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ENGINE_URL } from "@/lib/engine";
+import { ENGINE_URL, engineHeaders } from "@/lib/engine";
 
 // Proxy (possibly user-edited) rows to the engine and stream back the file.
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
   try {
     res = await fetch(`${ENGINE_URL}/export`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: engineHeaders({ "content-type": "application/json" }),
       body: payload,
     });
   } catch {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   // Surface available presets to the client (for the dropdown).
   try {
-    const res = await fetch(`${ENGINE_URL}/presets`);
+    const res = await fetch(`${ENGINE_URL}/presets`, { headers: engineHeaders() });
     const body = await res.text();
     return new NextResponse(body, {
       status: res.status,

@@ -133,7 +133,12 @@ class GeminiExtractor:
             try:
                 with urllib.request.urlopen(req, timeout=self.timeout, context=ctx) as resp:
                     payload = json.loads(resp.read().decode("utf-8"))
-                text = payload["candidates"][0]["content"]["parts"][0]["text"]
+                candidates = payload.get("candidates") or []
+                if not candidates:
+                    # No output (e.g. safety block / empty response) — surface
+                    # clearly instead of an IndexError.
+                    raise RuntimeError("LLM returned no candidates")
+                text = candidates[0]["content"]["parts"][0]["text"]
                 return json.loads(text)
             except urllib.error.HTTPError as e:
                 last_exc = e

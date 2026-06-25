@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ENGINE_URL } from "@/lib/engine";
+import { ENGINE_URL, engineHeaders } from "@/lib/engine";
 
 // Proxy the upload to the FastAPI engine. Keeps the engine URL server-side and
 // gives us one place to later enforce auth/usage limits before extraction.
@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     res = await fetch(`${ENGINE_URL}/extract`, {
       method: "POST",
       body: upstream,
+      headers: engineHeaders(),
     });
   } catch {
     return NextResponse.json(
