@@ -14,9 +14,9 @@
     "@tabular/auth": "workspace:*",
     "@tabular/billing": "workspace:*",
     "@tabular/ui": "workspace:*",
-    "next": "15.1.3",
-    "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "next": "15.1.12",
+    "react": "19.0.7",
+    "react-dom": "19.0.7"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
