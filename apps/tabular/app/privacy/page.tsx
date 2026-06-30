@@ -36,11 +36,14 @@ export default function PrivacyPage() {
         <section>
           <h2 className="font-semibold text-[var(--tab-ink)]">AI extraction</h2>
           <p className="mt-1">
-            For scanned (image-only) statements, Tabular can use a third-party AI
-            vision provider to read the document. In that case the statement is
-            transmitted to that provider solely to perform the extraction. This
-            path is only used when enabled and only for scanned PDFs; text-based
-            statements are processed entirely by our own deterministic engine.
+            For scanned (image-only) statements, Tabular uses a third-party AI
+            vision provider (Google Gemini) to read the document. The statement is
+            transmitted to that provider solely to perform the extraction, over a
+            paid processing tier under which your data is{" "}
+            <strong>not used to train their models</strong> and is not retained
+            for that purpose. This path is only used for scanned PDFs; text-based
+            statements are processed entirely by our own deterministic engine and
+            never leave it.
           </p>
         </section>
 

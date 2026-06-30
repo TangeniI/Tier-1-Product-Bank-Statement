@@ -38,6 +38,16 @@ export default function TermsPage() {
         </section>
 
         <section>
+          <h2 className="font-semibold text-[var(--tab-ink)]">Pricing</h2>
+          <p className="mt-1">
+            Tabular is free to use during its beta. Paid plans are expected to
+            launch in October 2026. The service will remain free until then, and
+            any move to paid plans will be communicated in advance — you will
+            never be charged without opting in.
+          </p>
+        </section>
+
+        <section>
           <h2 className="font-semibold text-[var(--tab-ink)]">Acceptable use</h2>
           <p className="mt-1">
             Only upload statements you are entitled to process. Do not use the

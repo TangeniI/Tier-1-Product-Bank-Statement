@@ -1,11 +1,11 @@
 # Tabular Engine
 
-FastAPI service that turns a bank-statement PDF into normalised, **balance-reconciled** rows and exports CSV/XLSX.
+FastAPI service that turns a bank-statement PDF into normalised, **balance-reconciled** rows and exports CSV / XLSX / OFX·QBO.
 
 ## Pipeline
-`ingest` (text-layer vs scanned) → `profile_loader` (auto-match a YAML bank profile) → `parser` (layout-aware, positional columns + multi-line descriptions) → `normalize` (robust date/amount parsing, integer pence) → `reconcile` (row-by-row running-balance check + confidence) → `export` (CSV/XLSX + accounting presets).
+`ingest` (text-layer vs scanned) → **text layer:** `profile_loader` (auto-match a YAML bank profile) → `parser` (layout-aware positional columns, split- or single-amount, multi-line descriptions); **scanned:** `llm_extractor` (Gemini vision → structured rows) → `normalize` (robust date/amount parsing, integer pence) → `reconcile` (row-by-row running-balance check + confidence) → `categorize` → `export` (CSV/XLSX/OFX + accounting presets).
 
-Every figure must reconcile against the statement's own running balance or it is **flagged** — never silently "fixed".
+Every figure — whether from the deterministic parser or the LLM — must reconcile against the statement's own running balance or it is **flagged**, never silently "fixed".
 
 ## Run locally
 ```bash

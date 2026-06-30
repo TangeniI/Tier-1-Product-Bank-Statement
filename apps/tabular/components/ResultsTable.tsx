@@ -26,16 +26,6 @@ type EditableField =
   | "money_out"
   | "balance";
 
-// Order of the editable columns, used for keyboard navigation (Enter → next row).
-const COLS: EditableField[] = [
-  "date",
-  "description",
-  "category",
-  "money_in",
-  "money_out",
-  "balance",
-];
-
 export function ResultsTable({ result }: { result: ExtractionResult }) {
   const [rows, setRows] = React.useState<Transaction[]>(result.rows);
   const [presets, setPresets] = React.useState<Preset[]>([

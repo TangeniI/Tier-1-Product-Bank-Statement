@@ -96,7 +96,10 @@ export default function Home() {
             <li>✓ Deleted after processing</li>
           </ul>
           <p className="mt-4 text-center text-xs text-gray-400">
-            Supports Barclays &amp; Starling today · more UK banks coming. Free to try.
+            Supports Barclays &amp; Starling today · more UK banks coming.
+          </p>
+          <p className="mt-2 text-center text-xs text-[var(--tab-brand-dark)]">
+            Free while in beta — paid plans launch October 2026.
           </p>
 
           <div className="mt-12 grid gap-6 text-center sm:grid-cols-3">
@@ -164,6 +167,7 @@ export default function Home() {
           flagged rows; you remain responsible for checking the exported file
           before using it for accounting or tax.
         </p>
+        <p>Free while in beta · paid plans launch October 2026.</p>
         <p className="flex justify-center gap-4">
           <a href="/privacy" className="underline hover:text-gray-600">
             Privacy

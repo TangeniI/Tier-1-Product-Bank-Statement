@@ -7,6 +7,7 @@ the final arbiter of accuracy.
 """
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from .categorize import categorize
@@ -17,6 +18,8 @@ from .parser import RawRow, parse_document
 from .profile_loader import get_generic_profile, match_profile
 from .reconcile import reconcile
 from .schema import ExtractionResult, ReconcileSummary, Transaction
+
+logger = logging.getLogger("tabular.pipeline")
 
 
 def extract(
@@ -89,7 +92,10 @@ def _extract_scanned(
 
     try:
         payload = extractor.extract(data)
-    except Exception:
+    except Exception as exc:
+        # Log the failure (exception only — never statement content) so prod
+        # errors are diagnosable.
+        logger.warning("LLM extraction failed: %s: %s", type(exc).__name__, exc)
         return ExtractionResult(
             bank_profile="scanned",
             page_count=doc.page_count,

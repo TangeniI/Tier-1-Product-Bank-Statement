@@ -1,0 +1,17 @@
+name: Keep engine warm
+
+# Render's free tier spins the engine down after ~15 min idle (≈50s cold start).
+# Pinging /healthz every ~14 min keeps the demo instant for visitors.
+on:
+  schedule:
+    - cron: "*/14 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping engine health
+        run: |
+          curl -fsS --max-time 90 \
+            https://tier-1-product-bank-statement.onrender.com/healthz || true
